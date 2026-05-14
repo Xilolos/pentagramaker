@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Pentagramaker</title>
   <meta name="description" content="Real-time sheet music transcription from microphone input" />
   <link rel="stylesheet" href="css/style.css" />
@@ -15,21 +15,28 @@
 <body>
 
 <div id="app">
+  <div id="mobile-overlay" class="mobile-overlay"></div>
 
   <!-- ── Header ─────────────────────────────────────────────────────────── -->
   <header id="header">
+    <button class="btn btn-ghost btn-mobile-toggle" id="btn-sidebar-toggle" title="Toggle sheets panel">☰</button>
     <h1>Pentagramaker</h1>
     <span id="session-name">—</span>
     <div class="header-actions">
       <button class="btn btn-ghost" id="btn-rename" title="Rename sheet">Rename</button>
       <button class="btn btn-ghost" id="btn-share" title="Copy share link">Share</button>
       <button class="btn btn-primary" id="btn-new" title="New sheet">+ New</button>
+      <button class="btn btn-ghost btn-mobile-toggle" id="btn-settings-toggle" title="Toggle settings">⚙</button>
     </div>
   </header>
 
   <!-- ── Sidebar (Sessions) ──────────────────────────────────────────────── -->
   <aside id="sidebar">
-    <div id="sidebar-header">Sheets</div>
+    <div id="sidebar-header">
+      Sheets
+      <label for="import-file-input" class="btn-import-label" title="Import session (.json)">↑ Import</label>
+    </div>
+    <input type="file" id="import-file-input" accept=".json" style="display:none" />
     <ul id="session-list"></ul>
     <div id="sidebar-footer">
       <small style="color:var(--text-muted);font-size:11px;">Click a sheet to open it</small>
@@ -146,9 +153,15 @@
     <div class="toolbar-sep"></div>
 
     <div class="toolbar-group">
-      <button class="btn btn-ghost" id="btn-pdf" title="Download PDF">↓ PDF</button>
-      <button class="btn btn-ghost" id="btn-mxl" title="Download MusicXML">↓ MusicXML</button>
-      <button class="btn btn-ghost" id="btn-midi" title="Download MIDI">↓ MIDI</button>
+      <div class="dropdown" id="download-dropdown">
+        <button class="btn btn-ghost" id="btn-download" title="Download">↓ Download ▾</button>
+        <div class="dropdown-menu" id="download-menu">
+          <button class="dropdown-item" id="btn-pdf">PDF (Print)</button>
+          <button class="dropdown-item" id="btn-mxl">MusicXML</button>
+          <button class="dropdown-item" id="btn-midi">MIDI</button>
+          <button class="dropdown-item" id="btn-json">Session JSON</button>
+        </div>
+      </div>
     </div>
 
   </div>

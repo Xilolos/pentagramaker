@@ -4,7 +4,7 @@ import { Quantizer } from './quantizer.js';
 import { Renderer } from './renderer.js';
 import { Editor } from './editor.js';
 import { Player } from './player.js';
-import { exportMusicXML, exportMIDI, exportPDF, getShareableURL, loadFromURL } from './exporter.js';
+import { exportMusicXML, exportMIDI, exportPDF, exportSessionJSON, getShareableURL, loadFromURL } from './exporter.js';
 import { generateUUID, pitchToMidi, midiToPitch, clampMidi } from './utils.js';
 
 // ─── State ────────────────────────────────────────────────────────────────────
@@ -42,9 +42,18 @@ const elTimeSelect = $('time-select');
 const elClefSelect = $('clef-select');
 const elBtnTranspose = $('btn-transpose');
 const elBtnTempoShift = $('btn-tempo-shift');
+const elBtnDownload = $('btn-download');
+const elDownloadMenu = $('download-menu');
 const elBtnPDF = $('btn-pdf');
 const elBtnMXL = $('btn-mxl');
 const elBtnMIDI = $('btn-midi');
+const elBtnJSON = $('btn-json');
+const elSidebarPanel = $('sidebar');
+const elSettingsPanel = $('settings');
+const elBtnSidebarToggle = $('btn-sidebar-toggle');
+const elBtnSettingsToggle = $('btn-settings-toggle');
+const elMobileOverlay = $('mobile-overlay');
+const elImportFileInput = $('import-file-input');
 const elCountdown = $('countdown');
 const elRecStatus = $('rec-status');
 const elTransposeModal = $('transpose-modal');
@@ -261,9 +270,69 @@ function bindToolbar() {
     $('tempo-snap-label').textContent = `${elTempoSnap.value}%`;
   });
 
-  elBtnPDF.addEventListener('click', () => exportPDF());
-  elBtnMXL.addEventListener('click', () => session && exportMusicXML(session));
-  elBtnMIDI.addEventListener('click', () => session && exportMIDI(session));
+  // Download dropdown
+  elBtnDownload.addEventListener('click', e => {
+    e.stopPropagation();
+    elDownloadMenu.classList.toggle('open');
+  });
+
+  const closeDownloadMenu = () => elDownloadMenu.classList.remove('open');
+
+  elBtnPDF.addEventListener('click', () => { exportPDF(); closeDownloadMenu(); });
+  elBtnMXL.addEventListener('click', () => { session && exportMusicXML(session); closeDownloadMenu(); });
+  elBtnMIDI.addEventListener('click', () => { session && exportMIDI(session); closeDownloadMenu(); });
+  elBtnJSON.addEventListener('click', () => { session && exportSessionJSON(session); closeDownloadMenu(); });
+
+  document.addEventListener('click', closeDownloadMenu);
+
+  // Import session file
+  elImportFileInput.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const imported = SessionManager.importJSON(ev.target.result);
+      if (imported) {
+        session = imported;
+        editor.setSession(session);
+        renderSidebar();
+        renderSession();
+        syncControls();
+        showToast(`Imported "${imported.name}"`);
+      } else {
+        showToast('Import failed: invalid file', 'error');
+      }
+      elImportFileInput.value = '';
+    };
+    reader.readAsText(file);
+  });
+
+  // Mobile panel toggles
+  function closeMobilePanels() {
+    elSidebarPanel.classList.remove('mobile-open');
+    elSettingsPanel.classList.remove('mobile-open');
+    elMobileOverlay.classList.remove('active');
+  }
+
+  elBtnSidebarToggle.addEventListener('click', () => {
+    const opening = !elSidebarPanel.classList.contains('mobile-open');
+    closeMobilePanels();
+    if (opening) {
+      elSidebarPanel.classList.add('mobile-open');
+      elMobileOverlay.classList.add('active');
+    }
+  });
+
+  elBtnSettingsToggle.addEventListener('click', () => {
+    const opening = !elSettingsPanel.classList.contains('mobile-open');
+    closeMobilePanels();
+    if (opening) {
+      elSettingsPanel.classList.add('mobile-open');
+      elMobileOverlay.classList.add('active');
+    }
+  });
+
+  elMobileOverlay.addEventListener('click', closeMobilePanels);
 }
 
 // ─── Settings panel ───────────────────────────────────────────────────────────

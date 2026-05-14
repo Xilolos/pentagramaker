@@ -186,6 +186,13 @@ export function exportPDF() {
   window.print();
 }
 
+// ─── Session JSON ──────────────────────────────────────────────────────────────
+
+export function exportSessionJSON(session) {
+  const json = JSON.stringify(session, null, 2);
+  download(json, `${sanitizeFilename(session.name)}.json`, 'application/json');
+}
+
 // ─── Share URL ────────────────────────────────────────────────────────────────
 
 export function getShareableURL(session) {
