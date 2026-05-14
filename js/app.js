@@ -134,6 +134,7 @@ async function init() {
     const lastMeasure = session.measures[session.measures.length - 1];
     lastMeasure.notes.push(note);
     SessionManager.save(session);
+    updateEmptyState();
     scheduleRender(); // debounced — batches rapid 8th notes into one render
   });
 
@@ -156,6 +157,14 @@ function renderSession() {
   if (!session) return;
   renderer.render(session);
   editor.setSession(session);
+  updateEmptyState();
+}
+
+function updateEmptyState() {
+  const el = document.getElementById('empty-state');
+  if (!el) return;
+  const hasNotes = session?.measures?.some(m => m.notes.length > 0);
+  el.classList.toggle('hidden', !!hasNotes);
 }
 
 function renderSidebar() {

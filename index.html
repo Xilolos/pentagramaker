@@ -46,6 +46,11 @@
   <!-- ── Main Sheet Area ────────────────────────────────────────────────── -->
   <main id="main">
     <div id="sheet-container"></div>
+    <div id="empty-state">
+      <div class="empty-icon">𝄞</div>
+      <p class="empty-title">Start singing — notes will appear here</p>
+      <p class="empty-sub">Press <strong>● Rec</strong>, wait for the countdown, then sing or hum. The sheet fills in real time.</p>
+    </div>
     <span id="rec-status"></span>
     <div id="countdown"></div>
     <div id="keyboard-hint">Select a note: ↑↓ pitch · ←→ navigate · 1-6 duration · Del remove · R rest · Ctrl+Z undo</div>
@@ -56,6 +61,7 @@
 
     <div class="setting-group">
       <div class="setting-label">Score Settings</div>
+      <p class="auto-detect-note">Key and time signature are auto-detected after recording. You can override them below.</p>
       <div class="setting-row">
         <label for="key-select">Key</label>
         <select id="key-select">
