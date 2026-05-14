@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pentagramaker</title>
+  <meta name="description" content="Real-time sheet music transcription from microphone input" />
+  <link rel="stylesheet" href="css/style.css" />
+
+  <!-- VexFlow 4 (sheet music rendering) -->
+  <script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.6/build/cjs/vexflow.js"></script>
+  <!-- Tone.js (audio synthesis & playback) -->
+  <script src="https://cdn.jsdelivr.net/npm/tone@14/build/Tone.js"></script>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ── Header ─────────────────────────────────────────────────────────── -->
+  <header id="header">
+    <h1>Pentagramaker</h1>
+    <span id="session-name">—</span>
+    <div class="header-actions">
+      <button class="btn btn-ghost" id="btn-rename" title="Rename sheet">Rename</button>
+      <button class="btn btn-ghost" id="btn-share" title="Copy share link">Share</button>
+      <button class="btn btn-primary" id="btn-new" title="New sheet">+ New</button>
+    </div>
+  </header>
+
+  <!-- ── Sidebar (Sessions) ──────────────────────────────────────────────── -->
+  <aside id="sidebar">
+    <div id="sidebar-header">Sheets</div>
+    <ul id="session-list"></ul>
+    <div id="sidebar-footer">
+      <small style="color:var(--text-muted);font-size:11px;">Click a sheet to open it</small>
+    </div>
+  </aside>
+
+  <!-- ── Main Sheet Area ────────────────────────────────────────────────── -->
+  <main id="main">
+    <div id="sheet-container"></div>
+    <span id="rec-status"></span>
+    <div id="countdown"></div>
+    <div id="keyboard-hint">Select a note: ↑↓ pitch · ←→ navigate · 1-6 duration · Del remove · R rest · Ctrl+Z undo</div>
+  </main>
+
+  <!-- ── Settings Panel ────────────────────────────────────────────────── -->
+  <aside id="settings">
+
+    <div class="setting-group">
+      <div class="setting-label">Score Settings</div>
+      <div class="setting-row">
+        <label for="key-select">Key</label>
+        <select id="key-select">
+          <option value="C">C major</option>
+          <option value="G">G major</option>
+          <option value="D">D major</option>
+          <option value="A">A major</option>
+          <option value="E">E major</option>
+          <option value="B">B major</option>
+          <option value="F">F major</option>
+          <option value="Bb">Bb major</option>
+          <option value="Eb">Eb major</option>
+          <option value="Ab">Ab major</option>
+          <option value="Db">Db major</option>
+          <option value="Gb">Gb major</option>
+        </select>
+      </div>
+      <div class="setting-row">
+        <label for="time-select">Time</label>
+        <select id="time-select">
+          <option value="4/4">4/4</option>
+          <option value="3/4">3/4</option>
+          <option value="2/4">2/4</option>
+          <option value="6/8">6/8</option>
+          <option value="2/2">2/2</option>
+          <option value="5/4">5/4</option>
+        </select>
+      </div>
+      <div class="setting-row">
+        <label for="clef-select">Clef</label>
+        <select id="clef-select">
+          <option value="treble">Treble</option>
+          <option value="bass">Bass</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="slider-group">
+      <div class="slider-header">
+        <span>Note Snap</span>
+        <span class="slider-value" id="note-snap-label">80%</span>
+      </div>
+      <input type="range" id="note-snap" min="0" max="100" value="80" />
+      <div class="slider-desc">How much to round pitch to nearest semitone (0% = microtonal, 100% = fully snapped)</div>
+    </div>
+
+    <div class="slider-group">
+      <div class="slider-header">
+        <span>Tempo Snap</span>
+        <span class="slider-value" id="tempo-snap-label">70%</span>
+      </div>
+      <input type="range" id="tempo-snap" min="0" max="100" value="70" />
+      <div class="slider-desc">How much to snap note durations to the tempo grid (0% = free, 100% = strict grid)</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="setting-group">
+      <div class="setting-label">Editing</div>
+      <div style="font-size:11px;color:var(--text-muted);line-height:1.6;">
+        <b>Drag</b> note head up/down to change pitch<br>
+        <b>↑↓</b> ±1 semitone · <b>Shift+↑↓</b> ±1 octave<br>
+        <b>1–6</b> change duration · <b>.</b> dotted<br>
+        <b>R</b> rest · <b>Del</b> delete · <b>Ctrl+Z</b> undo
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ── Toolbar ───────────────────────────────────────────────────────── -->
+  <div id="toolbar">
+
+    <div class="toolbar-group">
+      <button class="btn btn-rec" id="btn-rec" title="Start/stop recording">● Rec</button>
+      <button class="btn btn-play" id="btn-play" title="Play / pause">▶ Play</button>
+      <button class="btn btn-ghost" id="btn-stop" title="Stop">■ Stop</button>
+      <button class="btn-icon" id="btn-metro" title="Metronome off">𝅘𝅥𝅮 Metro</button>
+    </div>
+
+    <div class="toolbar-sep"></div>
+
+    <div class="bpm-group">
+      BPM <input type="number" id="bpm-input" value="120" min="20" max="300" />
+    </div>
+
+    <div class="toolbar-sep"></div>
+
+    <div class="toolbar-group">
+      <button class="btn btn-ghost" id="btn-transpose" title="Transpose">Transpose</button>
+      <button class="btn btn-ghost" id="btn-tempo-shift" title="Change tempo">Tempo</button>
+    </div>
+
+    <div class="toolbar-sep"></div>
+
+    <div class="toolbar-group">
+      <button class="btn btn-ghost" id="btn-pdf" title="Download PDF">↓ PDF</button>
+      <button class="btn btn-ghost" id="btn-mxl" title="Download MusicXML">↓ MusicXML</button>
+      <button class="btn btn-ghost" id="btn-midi" title="Download MIDI">↓ MIDI</button>
+    </div>
+
+  </div>
+
+</div><!-- #app -->
+
+<!-- ── Transpose Modal ─────────────────────────────────────────────────── -->
+<div class="modal-backdrop" id="transpose-modal">
+  <div class="modal">
+    <h2>Transpose</h2>
+    <div class="modal-body">
+      <label for="transpose-semitones">Semitones (–24 to +24)</label>
+      <input type="number" id="transpose-semitones" value="0" min="-24" max="24" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="btn-transpose-close">Cancel</button>
+      <button class="btn btn-primary" id="btn-transpose-apply">Apply</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Tempo Modal ─────────────────────────────────────────────────────── -->
+<div class="modal-backdrop" id="tempo-modal">
+  <div class="modal">
+    <h2>Change Tempo</h2>
+    <div class="modal-body">
+      <label for="tempo-new-bpm">New BPM</label>
+      <input type="number" id="tempo-new-bpm" value="120" min="20" max="300" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="btn-tempo-close">Cancel</button>
+      <button class="btn btn-primary" id="btn-tempo-apply">Apply</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
