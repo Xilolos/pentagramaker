@@ -92,26 +92,40 @@ async function init() {
   bindSettings();
   bindModals();
 
+  // Debounced render during recording — accumulates rapid notes (e.g. 8th notes)
+  // into a single render call so VexFlow draws them with proper beaming.
+  let _renderTimer = null;
+  function scheduleRender() {
+    clearTimeout(_renderTimer);
+    _renderTimer = setTimeout(() => renderer.render(session), 120);
+  }
+
   // Pitch detector callbacks
   pitchDetector.onNote(noteInfo => {
     if (!recording) return;
+    // If a previous note was active and pitch changed (no silence gap), end it first
+    if (pendingNoteStart && pendingNoteStart.pitch !== noteInfo.pitch) {
+      quantizer.endNote({
+        pitch: pendingNoteStart.pitch,
+        startTime: pendingNoteStart.startTime,
+        endTime: noteInfo.startTime,
+      });
+    }
     quantizer.beginNote(noteInfo.pitch, noteInfo.startTime);
     pendingNoteStart = noteInfo;
-    lastSilenceStart = null;
-    elRecStatus.textContent = `Detected: ${noteInfo.pitch}`;
+    elRecStatus.textContent = `♩ ${noteInfo.pitch}`;
   });
 
   pitchDetector.onSilence(silenceInfo => {
     if (!recording) return;
     if (pendingNoteStart) {
-      const note = quantizer.endNote({
+      quantizer.endNote({
         pitch: silenceInfo.pitch || pendingNoteStart.pitch,
         startTime: pendingNoteStart.startTime,
         endTime: silenceInfo.endTime,
       });
       pendingNoteStart = null;
-      lastSilenceStart = silenceInfo.endTime;
-      elRecStatus.textContent = 'Listening...';
+      elRecStatus.textContent = 'Listening…';
     }
   });
 
@@ -120,13 +134,16 @@ async function init() {
     const lastMeasure = session.measures[session.measures.length - 1];
     lastMeasure.notes.push(note);
     SessionManager.save(session);
-    renderer.render(session);
+    scheduleRender(); // debounced — batches rapid 8th notes into one render
   });
 
   quantizer.onMeasureFull(() => {
     if (!session) return;
     session.measures.push({ id: generateUUID(), notes: [] });
     SessionManager.save(session);
+    // Render immediately on measure boundary so user sees the barline
+    clearTimeout(_renderTimer);
+    renderer.render(session);
   });
 
   // Handle window resize
