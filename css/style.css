@@ -45,6 +45,7 @@ html, body {
     "sidebar main settings"
     "toolbar toolbar toolbar";
   height: 100vh;
+  height: 100dvh; /* iOS Safari: tracks the visible viewport as chrome shows/hides */
 }
 
 /* ── Header ────────────────────────────────────────────────────────────────── */
@@ -273,6 +274,7 @@ select {
   color: var(--text);
   cursor: pointer;
   outline: none;
+  touch-action: manipulation;
   transition: border-color var(--transition);
 }
 
@@ -405,6 +407,7 @@ body.playing #toolbar { background: var(--playback-bg); }
   font-family: var(--font);
   font-weight: 500;
   cursor: pointer;
+  touch-action: manipulation; /* prevents 300ms tap delay on iOS */
   transition: background var(--transition), color var(--transition), box-shadow var(--transition);
   white-space: nowrap;
   outline: none;
@@ -451,6 +454,7 @@ body.playing #toolbar { background: var(--playback-bg); }
   border-radius: var(--radius-sm);
   cursor: pointer;
   font-size: 13px;
+  touch-action: manipulation;
   transition: all var(--transition);
 }
 
@@ -697,14 +701,30 @@ body.playing #toolbar { background: var(--playback-bg); }
 
   #app {
     grid-template-columns: 1fr;
-    grid-template-rows: 48px 1fr 88px;
+    /* rows grow with safe-area so toolbar never hides behind home indicator */
+    grid-template-rows:
+      calc(48px + env(safe-area-inset-top, 0px))
+      1fr
+      calc(88px + env(safe-area-inset-bottom, 0px));
     grid-template-areas:
       "header"
       "main"
       "toolbar";
+    height: 100vh;
+    height: 100dvh;
   }
 
-  /* Sidebar slides in from left */
+  /* Header pushed down below notch */
+  #header {
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-left: 8px;
+    padding-right: 8px;
+    height: calc(48px + env(safe-area-inset-top, 0px));
+    align-items: flex-end;
+    padding-bottom: 4px;
+  }
+
+  /* Sidebar slides in from left, respects safe areas */
   #sidebar {
     position: fixed;
     left: -260px;
@@ -714,11 +734,13 @@ body.playing #toolbar { background: var(--playback-bg); }
     z-index: 50;
     transition: left 0.25s ease;
     box-shadow: 2px 0 16px rgba(80, 60, 120, 0.18);
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
   #sidebar.mobile-open { left: 0; }
 
-  /* Settings slides in from right */
+  /* Settings slides in from right, respects safe areas */
   #settings {
     position: fixed;
     right: -260px;
@@ -728,6 +750,8 @@ body.playing #toolbar { background: var(--playback-bg); }
     z-index: 50;
     transition: right 0.25s ease;
     box-shadow: -2px 0 16px rgba(80, 60, 120, 0.18);
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
   #settings.mobile-open { right: 0; }
@@ -736,31 +760,63 @@ body.playing #toolbar { background: var(--playback-bg); }
 
   #header h1 { display: none; }
 
-  /* Toolbar scrolls horizontally */
+  /* Bigger touch targets — iOS HIG minimum is 44 × 44pt */
+  .btn, .btn-icon {
+    min-height: 44px;
+    padding: 10px 14px;
+  }
+
+  /* Prevent iOS auto-zoom when tapping selects/inputs (needs ≥16px) */
+  select,
+  input[type="number"],
+  input[type="range"] {
+    font-size: 16px;
+  }
+
+  .bpm-group input[type="number"] {
+    width: 60px;
+    font-size: 16px;
+  }
+
+  /* Toolbar scrolls horizontally, hides scrollbar on iOS */
   #toolbar {
     overflow-x: auto;
     overflow-y: hidden;
     flex-wrap: nowrap;
-    padding: 0 10px;
+    -webkit-overflow-scrolling: touch;
+    padding: 0 12px;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
     gap: 6px;
-    height: 88px;
+    height: calc(88px + env(safe-area-inset-bottom, 0px));
+    align-items: center;
   }
 
-  #toolbar::-webkit-scrollbar { height: 3px; }
+  #toolbar::-webkit-scrollbar { display: none; }
 
   .toolbar-group,
   .toolbar-sep,
   .bpm-group { flex-shrink: 0; }
 
-  /* Dropdown opens upward — keep on mobile too */
+  /* iOS momentum scrolling on sheet and panels */
+  #sheet-container,
+  #session-list,
+  #settings {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Dropdown opens upward */
   .dropdown-menu { bottom: calc(100% + 8px); right: 0; }
 
   #keyboard-hint { display: none; }
 
-  .toast { bottom: 100px; }
+  /* Toast above home indicator */
+  .toast { bottom: calc(env(safe-area-inset-bottom, 0px) + 100px); }
 }
 
 @media (max-width: 480px) {
   #btn-rename,
   #btn-share { display: none; }
+
+  /* Delete button always visible on touch — no hover state on mobile */
+  .session-delete { opacity: 0.45; }
 }
