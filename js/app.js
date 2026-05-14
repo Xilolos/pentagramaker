@@ -164,7 +164,7 @@ function updateEmptyState() {
   const el = document.getElementById('empty-state');
   if (!el) return;
   const hasNotes = session?.measures?.some(m => m.notes.length > 0);
-  el.classList.toggle('hidden', !!hasNotes);
+  el.classList.toggle('visible', !hasNotes);
 }
 
 function renderSidebar() {
