@@ -55,13 +55,13 @@ export class Renderer {
       const rowY = rowIdx * ROW_HEIGHT + STAVE_Y_OFFSET;
       const totalAvail = containerWidth - MARGIN_LEFT - MARGIN_RIGHT;
 
-      // Calculate widths: first stave gets extra for clef/key/time
+      // Calculate widths: first stave gets extra space for clef/key/time symbols
       const isFirstRow = rowIdx === 0;
       const extraFirst = isFirstRow ? EXTRA_FIRST_STAVE : 30;
-      const restWidth = (totalAvail - extraFirst) / Math.max(1, rowMeasures.length - 1 + (rowMeasures.length === 1 ? 0 : 0));
-      // All staves equal except first has extra
-      const firstWidth = extraFirst + (totalAvail - extraFirst) / rowMeasures.length;
-      const otherWidth = (totalAvail - firstWidth) / Math.max(1, rowMeasures.length - 1);
+      const n = rowMeasures.length;
+      const baseWidth = (totalAvail - (n > 1 ? extraFirst : 0)) / n;
+      const firstWidth = baseWidth + (n > 1 ? extraFirst : 0);
+      const otherWidth = baseWidth;
 
       let x = MARGIN_LEFT;
 
@@ -71,7 +71,6 @@ export class Renderer {
         const staveWidth = isFirstStave ? firstWidth : otherWidth;
 
         const stave = new VF.Stave(x, rowY, staveWidth);
-        stave.setStyle({ strokeStyle: '#8a9ab5', fillStyle: '#8a9ab5' });
 
         if (isFirstStave && rowIdx === 0) {
           stave.addClef(session.clef || 'treble');
@@ -80,10 +79,6 @@ export class Renderer {
         } else if (isFirstStave) {
           stave.addClef(session.clef || 'treble');
           stave.addKeySignature(session.keySignature || 'C');
-        }
-
-        if (mi < rowMeasures.length - 1) {
-          stave.setEndBarType(VF.Barline?.type?.SINGLE ?? 1);
         }
 
         stave.setContext(ctx).draw();
@@ -97,7 +92,7 @@ export class Renderer {
               num_beats: session.timeSignature.num,
               beat_value: session.timeSignature.den,
             });
-            voice.setMode(VF.Voice.Mode?.SOFT ?? 2);
+            voice.setMode(VF.Voice.Mode?.SOFT ?? 1);
             voice.addTickables(vfNotes);
 
             const formatter = new VF.Formatter();

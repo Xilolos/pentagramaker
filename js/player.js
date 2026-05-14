@@ -93,7 +93,14 @@ export const Player = {
           const freq = Tone.Frequency(midi, 'midi').toFrequency();
           Tone.Transport.schedule(time => {
             _synth.triggerAttackRelease(freq, durSec, time);
-            if (_onNotePlay) Tone.getDraw()?.schedule(() => _onNotePlay(note.id), time);
+            // Use Draw for UI sync if available, otherwise use a timeout estimate
+            if (_onNotePlay) {
+              try {
+                (Tone.getDraw?.() ?? Tone.Draw)?.schedule(() => _onNotePlay(note.id), time);
+              } catch (_) {
+                setTimeout(() => _onNotePlay(note.id), startSec * 1000);
+              }
+            }
           }, `+${startSec}`);
         }
       }
@@ -102,10 +109,10 @@ export const Player = {
     // Schedule stop
     const totalSec = beatOffset * secPerBeat;
     Tone.Transport.schedule(() => {
-      Tone.getDraw()?.schedule(() => {
+      setTimeout(() => {
         _isPlaying = false;
         if (_onStopped) _onStopped();
-      }, Tone.now());
+      }, 0);
     }, `+${totalSec + 0.2}`);
 
     // Metronome
