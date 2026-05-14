@@ -724,37 +724,36 @@ body.playing #toolbar { background: var(--playback-bg); }
     padding-bottom: 4px;
   }
 
-  /* Sidebar slides in from left, respects safe areas */
-  #sidebar {
-    position: fixed;
-    left: -260px;
-    top: 0;
-    bottom: 0;
-    width: 240px;
-    z-index: 50;
-    transition: left 0.25s ease;
-    box-shadow: 2px 0 16px rgba(80, 60, 120, 0.18);
-    padding-top: env(safe-area-inset-top, 0px);
-    padding-bottom: env(safe-area-inset-bottom, 0px);
-  }
-
-  #sidebar.mobile-open { left: 0; }
-
-  /* Settings slides in from right, respects safe areas */
+  /* Sidebar and settings: fully hidden (out of grid) until toggled */
+  #sidebar,
   #settings {
+    display: none;
     position: fixed;
-    right: -260px;
     top: 0;
     bottom: 0;
-    width: 240px;
     z-index: 50;
-    transition: right 0.25s ease;
-    box-shadow: -2px 0 16px rgba(80, 60, 120, 0.18);
+    width: 240px;
+    flex-direction: column;
+    overflow: hidden;
     padding-top: env(safe-area-inset-top, 0px);
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
-  #settings.mobile-open { right: 0; }
+  #sidebar {
+    left: 0;
+    box-shadow: 2px 0 16px rgba(80, 60, 120, 0.18);
+  }
+
+  #settings {
+    right: 0;
+    box-shadow: -2px 0 16px rgba(80, 60, 120, 0.18);
+    overflow-y: auto;
+  }
+
+  #sidebar.mobile-open,
+  #settings.mobile-open {
+    display: flex;
+  }
 
   .btn-mobile-toggle { display: inline-flex; }
 
